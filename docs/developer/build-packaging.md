@@ -96,6 +96,7 @@ npm run release:make            # 优先 docker，并重命名为 Serpent-linux-
 - glibc 基线与 x86_64 相同（Ubuntu 22.04 / 2.35）。需要 FUSE（`libfuse2`）；无 FUSE 时 `--appimage-extract-and-run`。X11 / Wayland 限制与 x86_64 相同。
 - Linux 图片解码走 sharp 的 WebAssembly 后端（`@img/sharp-wasm32`），不使用原生 `@img/sharp-linux-*`：Electron 的 Linux 可执行文件链接系统 GLib，而原生 sharp/libvips 自带另一份 GLib，解码图片时符号冲突会以 SIGSEGV（退出码 139）杀死 Library Worker（[electron#46323](https://github.com/electron/electron/issues/46323)）。`src/shared/load-sharp.ts` 在 Electron Linux 下拒绝原生后端，`forge.config.ts` 的 Linux 包会剔除这些原生目录，`verify-package.mjs` 在原生后端残留、wasm 缺失或版本与 sharp 不一致时使打包失败。升级 sharp 时必须把 `@img/sharp-wasm32` 固定到同一版本；缩略图管线实测比原生慢约 25%–40%。
 - Release 上传名与应用内更新器一致：`Serpent-linux-x86-64-<ver>.AppImage` 或 `Serpent-linux-arm64-<ver>.AppImage`（另附同名 `.sha256`）。校验清单为 `SHA256SUMS-linux-x64.txt` / `SHA256SUMS-linux-arm64.txt`。
+- 个人 fork 的自用发布流程（`main` 纯镜像 + `self/linux`、`{官方版本}-self.{n}` 版本号、更新器指向 fork）见 [Linux 个人版发布流程](self-release.md)。
 
 ### Windows 安装器（Inno Setup）
 

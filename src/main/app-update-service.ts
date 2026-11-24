@@ -31,7 +31,10 @@ import { appUpdateReleaseMetaSchema } from '../shared/app-update';
 import { checkStagingSpace, reapTaskStaging, removeTaskStaging } from './task-staging';
 import { isInsufficientSpaceError } from './disk-free-space';
 
-export const SERPENT_GITHUB_REPOSITORY = 'dolag233/Serpent';
+// Personal Linux fork: the updater must read this repository's releases, not
+// the upstream ones. Otherwise an official build (which still ships the native
+// sharp backends) could overwrite the Linux wasm fix.
+export const SERPENT_GITHUB_REPOSITORY = 'io-oss/Serpent';
 export const SERPENT_GITHUB_RELEASES_URL =
   `https://github.com/${SERPENT_GITHUB_REPOSITORY}/releases/latest`;
 

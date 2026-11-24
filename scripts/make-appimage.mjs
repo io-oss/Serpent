@@ -53,6 +53,10 @@ rmSync(appDir, { recursive: true, force: true });
 mkdirSync(path.join(appDir, 'usr', 'lib'), { recursive: true });
 const libDir = path.join(appDir, 'usr', 'lib', 'serpent');
 cpSync(packageDir, libDir, { recursive: true, verbatimSymlinks: true });
+// electron-packager creates the package root with mode 0700. The AppDir is
+// mounted by arbitrary users, so the copied application tree must be readable
+// and executable by group/others (appimagetool warns and may later fail).
+chmodSync(libDir, 0o755);
 // chrome-sandbox cannot be setuid inside a FUSE-mounted AppImage; without it
 // Chromium uses the user-namespace sandbox. AppRun falls back to
 // --no-sandbox only when user namespaces are unavailable (e.g. restricted by

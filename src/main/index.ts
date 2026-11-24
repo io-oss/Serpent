@@ -181,6 +181,7 @@ import {
 import {
   createAppUpdateService,
   reapWindowsInstallerStaging,
+  SERPENT_GITHUB_REPOSITORY,
   type AppUpdateFetch,
   type AppUpdateService,
 } from './app-update-service';
@@ -4886,7 +4887,7 @@ function createAppUpdateE2eFetch(): AppUpdateFetch | undefined {
     || !assetUrl
   ) return undefined;
 
-  const releaseApiUrl = "https://api.github.com/repos/dolag233/Serpent/releases/latest";
+  const releaseApiUrl = `https://api.github.com/repos/${SERPENT_GITHUB_REPOSITORY}/releases/latest`;
   return async (input) => {
     if (input === releaseApiUrl) {
       return new Response(await readFile(releasePath), {
