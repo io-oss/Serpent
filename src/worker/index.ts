@@ -15,6 +15,7 @@ import type { ParentPort } from 'electron';
 import {
   BUNDLED_HDRI_PRESET_IDS,
 } from '../shared/hdri-presets';
+import { installLinuxSharpWasm } from '../shared/load-sharp';
 import {
   MODEL_THUMBNAIL_DEFAULT_EDGE,
   modelThumbnailFormatForFileName,
@@ -119,6 +120,11 @@ import {
 } from './startup-burst-gate';
 import { DeferredThumbnailAdmission } from './deferred-thumbnail-admission';
 import { RawMetadataBackfillAdmissionGate } from './raw-metadata-backfill-gate';
+
+// The Library Worker decodes every imported image with sharp. Electron on
+// Linux must run its WebAssembly backend instead of the native one, whose
+// private GLib collides with Electron's system GLib and SIGSEGVs the worker.
+installLinuxSharpWasm();
 
 const parentPort: ParentPort | undefined = process.parentPort;
 const aiJobAbortRegistry = new AiJobAbortRegistry();

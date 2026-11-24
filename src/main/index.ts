@@ -63,6 +63,7 @@ import {
 } from "./viewer-video-shortcut-menu";
 import { matchBrowseKeyboardShortcut } from "../shared/browse-keyboard-shortcuts";
 import { artifactProtocolMimeForExtension } from "../shared/media-formats";
+import { installLinuxSharpWasm } from "../shared/load-sharp";
 import {
   selectImportSources as selectImportSourcesDialog,
   selectLibraryDirectory,
@@ -563,6 +564,10 @@ import {
   pluginUiMimeType,
 } from "./plugin-ui-assets";
 import { resolveE2eRenderingPolicy } from "./e2e-rendering-policy";
+
+// Electron on Linux must never load sharp's native backends (see load-sharp):
+// they collide with Electron's system GLib and SIGSEGV on image decode.
+installLinuxSharpWasm();
 
 // Headless E2E hosts may expose no hardware WebGL implementation. Opt those
 // tests into Chromium's explicitly acknowledged software path; production

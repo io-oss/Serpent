@@ -1,4 +1,9 @@
 import { createPluginTrustedHostHandler } from './plugin-trusted-host';
+import { installLinuxSharpWasm } from '../shared/load-sharp';
+
+// Trusted plugins import their own modules in this process. If one loads sharp,
+// Electron on Linux must get the WebAssembly backend instead of the native one.
+installLinuxSharpWasm();
 
 const parentPort = process.parentPort;
 if (parentPort === undefined) {

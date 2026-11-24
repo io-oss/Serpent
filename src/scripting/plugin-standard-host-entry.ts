@@ -1,4 +1,9 @@
 import { createPluginStandardHostHandler } from './plugin-standard-host';
+import { installLinuxSharpWasm } from '../shared/load-sharp';
+
+// Plugins may import sharp from the packaged application. On Linux that must
+// resolve to the WebAssembly backend, not the native one that crashes Electron.
+installLinuxSharpWasm();
 
 const parentPort = process.parentPort;
 if (parentPort === undefined) {

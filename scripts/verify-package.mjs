@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -128,6 +128,51 @@ if (existsSync(sqliteNodePath)) {
 const asarPath = path.join(resourcesPath, 'app.asar');
 const asarFiles = asar.listPackage(asarPath);
 const normalizedAsarFiles = new Set(asarFiles.map((entry) => entry.replaceAll('\\', '/').replace(/^\/?(?:\.\/)?/u, '')));
+
+// Electron on Linux links the system GLib, so sharp's native Linux backends
+// (which carry a private libvips + GLib) SIGSEGV the Library Worker on the
+// first decoded image (electron#46323). Linux must ship the WebAssembly build
+// instead and must not contain the native backends at all.
+if (packagePlatform === 'linux') {
+  const nativeBackends = [...normalizedAsarFiles].filter((entry) =>
+    /^node_modules\/@img\/sharp-(?:libvips-)?linux(?:musl)?-[^/]+\//u.test(entry),
+  );
+  if (nativeBackends.length > 0) {
+    throw new Error(
+      'Linux package contains sharp native backends, which crash the Electron Library Worker. ' +
+        `Remove them from the package: ${nativeBackends.slice(0, 5).join(', ')}`,
+    );
+  }
+
+  const wasmRoot = path.join(resourcesPath, 'app.asar.unpacked', 'node_modules', '@img', 'sharp-wasm32');
+  const wasmManifestPath = path.join(wasmRoot, 'package.json');
+  const wasmLibPath = path.join(wasmRoot, 'lib');
+  const missingWasm = [wasmManifestPath, path.join(wasmRoot, 'index.cjs')].filter(
+    (requiredPath) => !existsSync(requiredPath),
+  );
+  if (missingWasm.length > 0) {
+    throw new Error(
+      'Linux package is missing the sharp WebAssembly backend:\n' +
+        `${missingWasm.join('\n')}\n` +
+        'Install @img/sharp-wasm32 (see load-sharp.ts) before packaging.',
+    );
+  }
+  const wasmManifest = JSON.parse(readFileSync(wasmManifestPath, 'utf8'));
+  const sharpManifest = JSON.parse(
+    readFileSync(path.join(projectRoot, 'node_modules', 'sharp', 'package.json'), 'utf8'),
+  );
+  if (wasmManifest.version !== sharpManifest.version) {
+    throw new Error(
+      `Packaged @img/sharp-wasm32 ${String(wasmManifest.version)} does not match sharp ` +
+        `${String(sharpManifest.version)}; keep both versions identical.`,
+    );
+  }
+  const wasmFiles = existsSync(wasmLibPath) ? readdirSync(wasmLibPath) : [];
+  if (!wasmFiles.some((file) => file.endsWith('.node.wasm'))) {
+    throw new Error('Linux package is missing the sharp WebAssembly binary in @img/sharp-wasm32/lib.');
+  }
+}
+
 const requiredAsarEntries = [
   '.vite/build/plugin_standard_host.js',
   '.vite/build/plugin_trusted_host.js',

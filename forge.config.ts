@@ -10,6 +10,15 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 const projectRoot = import.meta.dirname;
 const appIconBase = path.join(projectRoot, 'assets', 'icons', 'app');
 
+// Electron's Linux binary links the system GLib, while sharp's prebuilt Linux
+// backends carry a private libvips + GLib. Decoding any image with those
+// backends corrupts GObject state and SIGSEGVs the process (electron#46323).
+// Linux packages run @img/sharp-wasm32 instead; load-sharp.ts also refuses the
+// native backends in dev and tests. Never ship dead native binaries that a
+// future resolver change could load again.
+const NATIVE_LINUX_SHARP_BACKEND =
+  /^\/node_modules\/@img\/sharp-(?:libvips-)?linux(?:musl)?-[^/]+(?:\/|$)/u;
+
 // Serpent Windows: keep MSBuild builds hermetic from user-wide vcpkg integration
 process.env.VcpkgEnabled = 'false';
 
@@ -147,6 +156,9 @@ const config: ForgeConfig = {
     // module plugin can unpack better-sqlite3.
     ignore: (file) => {
       if (!file) return false;
+      // Release builds are native-only (nativeMediaPlatform gate above), so the
+      // host platform is also the package platform.
+      if (process.platform === 'linux' && NATIVE_LINUX_SHARP_BACKEND.test(file)) return true;
       return !file.startsWith('/.vite') && !file.startsWith('/node_modules');
     },
   },
